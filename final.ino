@@ -12,6 +12,7 @@ const int right_dir_pin = 30;
 const int right_pwm_pin = 39;
 
 bool hasTurned = false;
+bool finished = false;
 
 double error = 0;
 double prevError = 0;
@@ -19,8 +20,10 @@ double prevError = 0;
 double derivative = 0;
 
 double output = 0;
-double kP = 7;
-double kD = 1; 
+
+int forwardSpeed = 80;
+double kP = 0.022;
+double kD = 0.15; 
 double kI;
 
 void setup() {
@@ -46,7 +49,6 @@ void setup() {
   ECE3_Init();
   Serial.begin(9600);
   delay(2000);
-
 }
 
 void loop() {
@@ -63,13 +65,14 @@ void loop() {
   sensorValues[6] = (sensorValues[6] - 630) * (1000.0 / 2096);
   sensorValues[7] = (sensorValues[7] - 723) * (1000.0 / 2500);
   */
-  if(sensorValues[0] + sensorValues[1] + sensorValues[2] + sensorValues[3] + sensorValues[4] + sensorValues[5] + sensorValues[6] + sensorValues[7] > 2200 * 8){
+  if(finished == true || (sensorValues[0] + sensorValues[1] + sensorValues[2] + sensorValues[3] + sensorValues[4] + sensorValues[5] + sensorValues[6] + sensorValues[7] > 2200 * 8)){
     if(hasTurned == false){
       turn();
       hasTurned = true;
     } else{
         analogWrite(left_pwm_pin, 0);
         analogWrite(right_pwm_pin, 0);
+        finished = true;
         return;
     }
   }
@@ -83,10 +86,19 @@ void loop() {
   sensorValues[6] = (sensorValues[6] - 630) * (1000.0 / 2500);
   sensorValues[7] = (sensorValues[7] - 747) * (1000.0 / 2500);
 
-  
 
-  double sensorFusion = (-1 * (15 * sensorValues[0] + 14 * sensorValues[1] + 12 * sensorValues[2] + 8 * sensorValues[3]) + 
-  (8 * sensorValues[4] + 12 * sensorValues[5] + 15 * sensorValues[6] + 15 * sensorValues[7])) / 4.0;
+  for(int i = 0; i < 8; i++){
+    if(sensorValues[i] < 0){
+      sensorValues[i] = 0;
+    }
+  }
+
+  //double sensorFusion = (-1 * (15 * sensorValues[0] + 14 * sensorValues[1] + 12 * sensorValues[2] + 8 * sensorValues[3]) + 
+  //(8 * sensorValues[4] + 12 * sensorValues[5] + 15 * sensorValues[6] + 15 * sensorValues[7])) / 4.0;
+
+  double sensorFusion = -1 * (8 * sensorValues[0] + 4 * sensorValues[1] + 2 * sensorValues[2] + 1 * sensorValues[3]) + 
+  (1 * sensorValues[4] + 2 * sensorValues[5] + 4 * sensorValues[6] + 8 * sensorValues[7]);
+
 
 /*
   for (unsigned char i = 0; i < 8; i++)
@@ -103,7 +115,7 @@ void loop() {
 
   // pid time 
 
-  error = (sensorFusion - 0)/100.0;
+  error = sensorFusion;
   //integral = integral_prior + error * iteration_time
   derivative = error - prevError;
   //output = KP*error + KI*integral + KD*derivative + bias
@@ -112,8 +124,8 @@ void loop() {
   //integral_prior = integral
  // sleep(iteration_time)
  
-  int leftSpeed = maxPWM(50 - error);
-  int rightSpeed = maxPWM(50 + error);
+  int leftSpeed = maxPWM(forwardSpeed - output);  
+  int rightSpeed = maxPWM(forwardSpeed + output);
   
   /*Serial.print("error: ");
   Serial.print(error);
@@ -144,14 +156,13 @@ void loop() {
   analogWrite(left_pwm_pin, leftSpeed);
   analogWrite(right_pwm_pin, rightSpeed);
   
-  delay(5);
 }
 
 int maxPWM(int pwm){
   if(pwm >= 255){
     return 255;
-  } else if(pwm <= -255){
-    return -255;
+  } else if(pwm <= 0){
+    return 0;
   }
   return pwm;
 }
@@ -159,9 +170,9 @@ int maxPWM(int pwm){
 void turn(){
   digitalWrite(left_dir_pin,HIGH);
   digitalWrite(right_dir_pin,LOW);
-  analogWrite(left_pwm_pin, 255);
-  analogWrite(right_pwm_pin, 255);
-  delay(250);
+  analogWrite(left_pwm_pin, 200);
+  analogWrite(right_pwm_pin, 200);
+  delay(300);
   digitalWrite(left_dir_pin,LOW);
   digitalWrite(right_dir_pin,LOW);
 }
