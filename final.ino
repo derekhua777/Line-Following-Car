@@ -21,9 +21,9 @@ double derivative = 0;
 
 double output = 0;
 
-int forwardSpeed = 87;
-double kP = 0.022;
-double kD = 0.15; 
+int forwardSpeed = 110;
+double kP = 0.03;
+double kD = 0.156; 
 double kI;
 
 void setup() {  
@@ -110,8 +110,8 @@ int maxPWM(int pwm){
 void turn(){
   digitalWrite(left_dir_pin,HIGH);
   digitalWrite(right_dir_pin,LOW);
-  analogWrite(left_pwm_pin, 220);
-  analogWrite(right_pwm_pin, 220);
+  analogWrite(left_pwm_pin, 200);
+  analogWrite(right_pwm_pin, 200);
   delay(280);
   digitalWrite(left_dir_pin,LOW);
   digitalWrite(right_dir_pin,LOW);
